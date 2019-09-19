@@ -1,13 +1,16 @@
 package simple_search
 
-import "fmt"
-
 type acNode struct {
 	char   byte
 	length int
 	next   map[byte]*acNode
 	isEnd  bool
 	fail   *acNode
+}
+
+type ACFindResult struct {
+	pos    int
+	length int
 }
 
 // 多模式串匹配算法AC自动机
@@ -33,6 +36,7 @@ func NewACAutomaton(words []string) *ACAutomaton {
 	return ac
 }
 
+// 使用广度遍历的方式设置fail指针
 func (ac *ACAutomaton) setFail() {
 	queue := make([]*acNode, 0, 16)
 	queue = append(queue, ac.root)
@@ -58,7 +62,11 @@ func (ac *ACAutomaton) setFail() {
 	}
 }
 
+// 加入新的单词，构建字典树
 func (ac *ACAutomaton) addWord(word string) {
+	if word == "" {
+		return
+	}
 	cur := ac.root
 	for i := 0; i < len(word)-1; i++ {
 		if cur.next == nil {
@@ -79,7 +87,6 @@ func (ac *ACAutomaton) addWord(word string) {
 	if cur.next == nil {
 		cur.next = make(map[byte]*acNode)
 	}
-	// 第一个word的fail指针是root
 	cur.next[word[len(word)-1]] = &acNode{
 		char:   word[len(word)-1],
 		length: len(word),
@@ -97,8 +104,8 @@ func (ac *ACAutomaton) Add(word string) {
 }
 
 // 寻找模式串在s中出现的下标
-func (ac *ACAutomaton) Find(s string) []int {
-	res := make([]int, 0, 10)
+func (ac *ACAutomaton) Find(s string) []*ACFindResult {
+	res := make([]*ACFindResult, 0, 10)
 	p := ac.root
 	for i := 0; i < len(s); i++ {
 		for p != ac.root && p.next[s[i]] == nil {
@@ -111,9 +118,10 @@ func (ac *ACAutomaton) Find(s string) []int {
 			q := p
 			for q != ac.root {
 				if q.isEnd {
-					pos := i - q.length + 1
-					fmt.Println("匹配到位置", pos, s[pos:pos+q.length])
-					res = append(res, pos)
+					res = append(res, &ACFindResult{
+						pos:    i - q.length + 1,
+						length: q.length,
+					})
 				}
 				q = q.fail
 			}
