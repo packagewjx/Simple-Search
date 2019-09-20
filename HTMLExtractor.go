@@ -1,6 +1,7 @@
 package simple_search
 
 import (
+	sort "sort"
 	"strings"
 )
 
@@ -30,12 +31,6 @@ func (extractor *HTMLExtractor) Extract(html string) (text string, links []strin
 		}
 		deletePos = append(deletePos, poses)
 	}
-	// 删除deletePos的东西
-	deleteCount := 0
-	for i := 0; i < len(deletePos); i++ {
-		html = html[:deletePos[i][0]-deleteCount] + html[deletePos[i][1]-deleteCount:]
-		deleteCount += deletePos[i][1] - deletePos[i][0]
-	}
 
 	// 删除标签，保留内容
 	for i := 0; i < len(html); {
@@ -44,26 +39,42 @@ func (extractor *HTMLExtractor) Extract(html string) (text string, links []strin
 			end := 0
 			for end = i + 1; end < len(html) && html[end] != '>'; end++ {
 			}
-			// 这个是链接标签，可以处理一下
-			if html[i+1] == 'a' {
-				link := extractLink(html[i:end])
-				// 去除无用的链接
-				if link != "" && link != "javascript:void(0);" && link != "#" {
-					links = append(links, link)
-				}
-			}
-
-			if end == len(html) {
-				html = html[:i]
-			} else {
-				html = html[:i] + html[end+1:]
-			}
+			deletePos = append(deletePos, []int{i, end + 1})
+			i = end + 1
 		} else {
 			i++
 		}
 	}
 
-	text = html
+	sort.Slice(deletePos, func(i, j int) bool {
+		return deletePos[i][0] < deletePos[j][0]
+	})
+
+	builder := strings.Builder{}
+	// 删除deletePos的东西
+	start := 0
+	for i := 0; i < len(deletePos); i++ {
+		// 有一部分重复的跳过。因为ac自动机与扫描标签的加入了同样的结果
+		if start > deletePos[i][0] {
+			continue
+		}
+		builder.WriteString(html[start:deletePos[i][0]])
+		// 这个是链接标签，可以处理一下
+		if html[deletePos[i][0]+1] == 'a' {
+			link := extractLink(html[deletePos[i][0]:deletePos[i][1]])
+			// 去除无用的链接
+			if link != "" && link != "javascript:void(0);" && link != "#" {
+				links = append(links, link)
+			}
+		}
+		start = deletePos[i][1]
+	}
+	// 把结尾的写进去
+	if start < len(html) {
+		builder.WriteString(html[start:])
+	}
+
+	text = builder.String()
 	return
 }
 
