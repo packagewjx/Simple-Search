@@ -62,10 +62,12 @@ func NewLocalFileAddressManager(fileName string) *LocalFileAddressManager {
 			line, e = reader.ReadString('\n')
 		}
 		// 加上最后一个
-		if e == io.EOF && line != "" {
-			add := line[:len(line)-1]
-			allAddresses = append(allAddresses, add)
-			filter.Add([]byte(add))
+		if e == io.EOF {
+			if line != "" {
+				add := line[:len(line)-1]
+				allAddresses = append(allAddresses, add)
+				filter.Add([]byte(add))
+			}
 		} else if e != nil {
 			panic(e)
 		}
