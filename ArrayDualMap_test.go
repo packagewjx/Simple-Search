@@ -8,7 +8,11 @@ import (
 )
 
 func TestArrayWordManager(t *testing.T) {
-	manager := NewArrayWordManager("wordtest.txt")
+	manager := NewArrayWordManager("wordtest.txt", func(val interface{}) string {
+		return val.(string)
+	}, func(valString string) interface{} {
+		return valString
+	})
 
 	words := make([]string, 0, 3000)
 	file, _ := os.Open("words.txt")
@@ -37,8 +41,8 @@ func TestArrayWordManager(t *testing.T) {
 		}
 	}
 
-	for i := 0; i < len(manager.words); i++ {
-		if manager.words[i] == "" {
+	for i := 0; i < len(manager.values); i++ {
+		if manager.values[i] == "" {
 			t.Error(i, "有空的部分")
 		}
 	}
@@ -46,12 +50,16 @@ func TestArrayWordManager(t *testing.T) {
 
 // 测试读取
 func TestNewArrayWordManager(t *testing.T) {
-	manager := NewArrayWordManager("wordtest.txt")
-	for i := 0; i < len(manager.words); i++ {
-		if manager.words[i] == "" {
+	manager := NewArrayWordManager("wordtest.txt", func(val interface{}) string {
+		return val.(string)
+	}, func(valString string) interface{} {
+		return valString
+	})
+	for i := 0; i < len(manager.values); i++ {
+		if manager.values[i] == "" {
 			t.Error(i, "有空的部分")
 		}
-		key := manager.GetKey(manager.words[i])
+		key := manager.GetKey(manager.values[i])
 		if key != i {
 			t.Error("键值应该是", i, "而不是", key)
 		}
